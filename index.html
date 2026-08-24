@@ -875,7 +875,7 @@ footer{border-top:1px solid var(--border-soft);padding:56px 0 40px;}
   transform:translateY(18px) scale(.98);opacity:0;transition:transform .32s cubic-bezier(.2,.8,.2,1),opacity .32s;
   position:relative;
 }
-.modal-overlay.open .modal-box{transform:translateY(0) scale(1);opacity:1;}
+.modal-overlay.open .modal-box{transform:none;opacity:1;}
 .modal-box.wide{max-width:960px;}
 .modal-close{
   position:absolute;top:18px;right:18px;width:36px;height:36px;border-radius:10px;
@@ -926,6 +926,18 @@ footer{border-top:1px solid var(--border-soft);padding:56px 0 40px;}
 .video-modal .modal-pad{padding:0;}
 .video-stage{width:100%;aspect-ratio:16/9;background:#000;border-radius:var(--radius-lg) var(--radius-lg) 0 0;overflow:hidden;position:relative;}
 .video-stage video, .video-stage iframe{width:100%;height:100%;border:0;display:block;}
+.video-stage:fullscreen, .video-stage:-webkit-full-screen{border-radius:0;aspect-ratio:auto;}
+.video-fullscreen-btn{
+  position:absolute;bottom:12px;right:12px;z-index:6;
+  width:40px;height:40px;border-radius:10px;
+  background:rgba(4,6,14,.6);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  border:1px solid rgba(255,255,255,.2);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-size:19px;line-height:1;cursor:pointer;
+  transition:background .2s ease,transform .2s ease;
+}
+.video-fullscreen-btn:hover{background:rgba(4,6,14,.85);transform:scale(1.06);}
+.video-fullscreen-btn:active{transform:scale(.94);}
 .video-placeholder{
   position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
   color:var(--text-faint);text-align:center;padding:30px;background:linear-gradient(135deg,#0e1320,#161d33);
@@ -1267,7 +1279,7 @@ footer{border-top:1px solid var(--border-soft);padding:56px 0 40px;}
     <div class="sec-head center reveal">
       <div class="demo-banner" style="margin-bottom:20px;">
         <svg viewBox="0 0 24 24" fill="none"><path d="M12 8v4l3 3M12 22a10 10 0 100-20 10 10 0 000 20z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        Fictional Demonstrations — Not Real Clients
+        Example Demonstrations — Not Real Clients
       </div>
       <h2 class="sec-title">Three example systems, built to show <span class="grad-text">how the pieces fit together.</span></h2>
       <p class="sec-sub">These are illustrative projects designed to demonstrate my process and build quality — not case studies of real clients.</p>
@@ -2481,7 +2493,7 @@ function openProjectModal(id){
     <div class="modal-pad">
       <div class="demo-banner" style="margin-bottom:14px;">DEMO DATA — NOT ACTUAL CLIENT RESULTS</div>
       <h3>${p.title}</h3>
-      <span class="modal-tagline">${p.industry} · Fictional demonstration project</span>
+      <span class="modal-tagline">${p.industry} · Example demonstration project</span>
       <div class="tab-row" data-group="proj">
         <button class="tab-btn active" data-tab="overview">Overview</button>
         <button class="tab-btn" data-tab="problem">Problem</button>
@@ -2819,6 +2831,41 @@ document.addEventListener('keydown', (e)=>{
   if(e.key === 'ArrowRight') $('#a2pNext')?.click();
 });
 
+/* ----------------------------------------------------------------
+   Fullscreen button for the video player — mainly for mobile, where
+   the modal's own size can make an embedded recording hard to see.
+   Tries the standard Fullscreen API first, then Safari/iOS fallbacks.
+   ---------------------------------------------------------------- */
+function fullscreenBtnHTML(){
+  return `<button type="button" class="video-fullscreen-btn" aria-label="Watch full screen">⛶</button>`;
+}
+function enterFullscreen(stageEl){
+  if(!stageEl) return;
+  const video = stageEl.querySelector('video');
+  const fallbackToVideo = ()=>{
+    // Some mobile browsers reject/throw on fullscreening a wrapping div —
+    // fall back to the native <video> fullscreen if one is present.
+    if(video && video.webkitEnterFullscreen) video.webkitEnterFullscreen();
+  };
+  const req = stageEl.requestFullscreen || stageEl.webkitRequestFullscreen ||
+              stageEl.webkitRequestFullScreen || stageEl.mozRequestFullScreen || stageEl.msRequestFullscreen;
+  if(req){
+    try{
+      const result = req.call(stageEl);
+      if(result && typeof result.catch === 'function') result.catch(fallbackToVideo);
+    }catch(err){
+      fallbackToVideo();
+    }
+  } else {
+    fallbackToVideo();
+  }
+}
+function wireFullscreenBtn(container){
+  const btn = $('.video-fullscreen-btn', container);
+  if(!btn) return;
+  btn.addEventListener('click', ()=> enterFullscreen(btn.closest('.video-stage')));
+}
+
 function mediaPlaceholder(msg){
   return `
     <div class="video-placeholder">
@@ -2857,10 +2904,13 @@ function openVideoModal(id){
     const renderBody = ()=>{
       const part = v.parts[activeIdx];
       let stageHTML;
+      let hasMedia = false;
       if(part.type === 'embed' && part.src){
         stageHTML = `<iframe src="${part.src}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen title="${part.label}"></iframe>`;
+        hasMedia = true;
       } else if(part.src){
         stageHTML = renderVideoStage(part.src, part.label);
+        hasMedia = true;
       } else {
         stageHTML = mediaPlaceholder(`Add a source for ${part.label} in the VIDEOS list to have it play right here.`);
       }
@@ -2868,7 +2918,7 @@ function openVideoModal(id){
         <button class="modal-close" id="modalCloseBtn" aria-label="Close">
           <svg viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>
-        <div class="video-stage">${stageHTML}</div>
+        <div class="video-stage">${stageHTML}${hasMedia ? fullscreenBtnHTML() : ''}</div>
         <div class="video-modal-info">
           <h3>${v.title}</h3>
           <p class="part-current-label">Part ${activeIdx+1} — ${part.label}</p>
@@ -2879,6 +2929,7 @@ function openVideoModal(id){
         </div>`;
       $('#modalCloseBtn').addEventListener('click', closeModal);
       if(part.type !== 'embed') wireVideoFallback();
+      if(hasMedia) wireFullscreenBtn(modalBox);
       $$('.part-btn', modalBox).forEach(btn=>{
         btn.addEventListener('click', ()=>{
           activeIdx = +btn.dataset.i;
@@ -2918,15 +2969,18 @@ function openVideoModal(id){
 
   // type 'file' or 'embed'
   let stageHTML = '';
+  let hasMedia = false;
   if(v.type === 'embed' && v.src){
     stageHTML = `<iframe src="${v.src}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen title="${v.title}"></iframe>`;
+    hasMedia = true;
   } else if(v.type === 'file' && v.src){
     stageHTML = renderVideoStage(v.src, v.title);
+    hasMedia = true;
   } else {
     stageHTML = mediaPlaceholder('Add a source for this video in the VIDEOS list to have it play right here.');
   }
   openModal(`
-    <div class="video-stage">${stageHTML}</div>
+    <div class="video-stage">${stageHTML}${hasMedia ? fullscreenBtnHTML() : ''}</div>
     <div class="video-modal-info">
       <h3>${v.title}</h3>
       <p>${v.description}</p>
@@ -2934,6 +2988,7 @@ function openVideoModal(id){
   `, 'wide video-modal');
 
   if(v.type === 'file' && v.src) wireVideoFallback();
+  if(hasMedia) wireFullscreenBtn(modalBox);
 }
 </script>
 
