@@ -637,9 +637,17 @@ table.dtable tr:last-child td{border-bottom:none;}
 .wf-branches.wf-open::before{background:var(--accent-2);box-shadow:0 0 8px rgba(34,211,238,.65);}
 .wf-branch-col{display:flex;flex-direction:column;align-items:center;}
 @media (max-width:760px){
-  .wf-branches{flex-direction:column;gap:20px;}
+  .builder-canvas{min-width:0;width:100%;}
+  .wf-node{width:100%;max-width:300px;}
+  .wf-branches{flex-direction:column;gap:22px;align-items:center;}
   .wf-branch-label{flex-direction:column;gap:8px;align-items:center;}
-  .builder-shell{padding:24px 16px;}
+  .builder-shell{padding:24px 16px;overflow-x:hidden;}
+}
+@media (max-width:400px){
+  .wf-node{max-width:100%;padding:14px 15px;}
+  .wf-node strong{font-size:13.5px;}
+  .wf-node p{font-size:12px;}
+  .builder-shell{padding:18px 10px;}
 }
 
 /* ============================================================
