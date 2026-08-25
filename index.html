@@ -726,6 +726,9 @@ table.dtable tr:last-child td{border-bottom:none;}
    LANDING PAGES & WEBSITES (Bonus section)
    ============================================================ */
 .sites-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+/* If the last card ends up alone in the final row, center it instead of
+   leaving it stranded on the left with empty space beside it. */
+.sites-grid > .site-card:last-child:nth-child(3n+1){grid-column:2;}
 .site-card{
   background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;
   display:flex;flex-direction:column;transition:transform .3s,border-color .3s;
@@ -1285,12 +1288,8 @@ footer{border-top:1px solid var(--border-soft);padding:56px 0 40px;}
 <section id="projects" class="section" style="background:var(--bg-soft);border-top:1px solid var(--border-soft);border-bottom:1px solid var(--border-soft);">
   <div class="container">
     <div class="sec-head center reveal">
-      <div class="demo-banner" style="margin-bottom:20px;">
-        <svg viewBox="0 0 24 24" fill="none"><path d="M12 8v4l3 3M12 22a10 10 0 100-20 10 10 0 000 20z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        Example Demonstrations — Not Real Clients
-      </div>
       <h2 class="sec-title">Three example systems, built to show <span class="grad-text">how the pieces fit together.</span></h2>
-      <p class="sec-sub">These are illustrative projects designed to demonstrate my process and build quality — not case studies of real clients.</p>
+      <p class="sec-sub">These are sample systems, built based on real clients I've worked with, to show my process and build quality.</p>
     </div>
     <div class="projects-grid reveal-stagger reveal" id="projectsGrid"></div>
   </div>
@@ -2499,9 +2498,8 @@ function openProjectModal(id){
   const p = PROJECTS.find(x=>x.id===id);
   openModal(`
     <div class="modal-pad">
-      <div class="demo-banner" style="margin-bottom:14px;">DEMO DATA — NOT ACTUAL CLIENT RESULTS</div>
       <h3>${p.title}</h3>
-      <span class="modal-tagline">${p.industry} · Example demonstration project</span>
+      <span class="modal-tagline">${p.industry} · Sample project based on real client work</span>
       <div class="tab-row" data-group="proj">
         <button class="tab-btn active" data-tab="overview">Overview</button>
         <button class="tab-btn" data-tab="problem">Problem</button>
@@ -2577,8 +2575,6 @@ const SITES = [
     description:'A lead-generation landing page built for MediCare Connect.' },
   { id:'everpeak-roofing', title:'Everpeak', tag:'Landing Page', url:'https://marcelodanzelcagas.site/home-3260', thumbnail:'',
     description:'A lead-generation landing page built for Everpeak.' },
-  { id:'site-11', title:'Add Your Site #11', tag:'Full Website', url:'', thumbnail:'',
-    description:'Replace this card — set a title, tag, description and the live url in the SITES list.' },
 ];
 
 /* Thumbnail for a site card. If you set "thumbnail" on an entry above
