@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>document.documentElement.classList.add('is-loading');</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Marcelo Danzel Cagas — GoHighLevel Systems &amp; Automation for Lead-Driven Businesses</title>
@@ -1287,9 +1288,308 @@ h1.hero-title,h2.sec-title{text-shadow:0 2px 26px rgba(3,1,16,.85);}
   .flow-card.card3d{transform:none;}
 }
 
+/* ============================================================
+   LOAD SCREEN — "Speed Force" entrance
+   Same palette + motion language as the rest of the page: dark
+   crimson field, gold lightning, streaks that imply velocity.
+   Purely decorative — the real content underneath is already
+   present in the markup, this just choreographs the reveal.
+   ============================================================ */
+html.is-loading,html.is-loading body{overflow:hidden;height:100%;}
+.load-sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+.load-screen{
+  position:fixed;inset:0;z-index:20000;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;gap:22px;
+  overflow:hidden;
+  background:radial-gradient(ellipse 90% 70% at 50% 42%,#2c0c13 0%,#170709 55%,#0a0406 100%);
+  transition:opacity .68s cubic-bezier(.6,0,.85,1),filter .68s cubic-bezier(.6,0,.85,1),transform .68s cubic-bezier(.6,0,.85,1);
+  animation:loaderSafetyHide .01s linear 4.6s forwards;
+}
+.load-screen::before{
+  content:'';position:absolute;inset:0;z-index:3;pointer-events:none;
+  background:radial-gradient(circle at 50% 46%,rgba(255,240,194,.9) 0%,rgba(255,194,51,.55) 30%,rgba(232,38,47,0) 68%);
+  opacity:0;
+}
+.load-screen.is-flash::before{animation:loadFlash .5s ease-out forwards;}
+.load-screen.is-gone{opacity:0;filter:blur(14px);transform:scale(1.1) translateY(-2%);pointer-events:none;}
+.load-screen.is-gone .load-streak{animation-duration:.22s !important;animation-timing-function:cubic-bezier(.2,.9,.3,1) !important;}
+@keyframes loadFlash{0%{opacity:0;}18%{opacity:1;}100%{opacity:0;}}
+@keyframes loaderSafetyHide{to{opacity:0;visibility:hidden;pointer-events:none;}}
+.load-field{position:absolute;inset:0;z-index:1;}
+.load-streak{
+  position:absolute;left:-30%;width:60%;height:2px;border-radius:999px;
+  background:linear-gradient(90deg,rgba(255,194,51,0) 0%,rgba(255,194,51,.85) 50%,rgba(232,38,47,0) 100%);
+  filter:blur(.3px);opacity:.55;
+  animation-name:loadStreak;animation-iteration-count:infinite;animation-timing-function:cubic-bezier(.3,.1,.2,1);
+  transform:rotate(var(--ang,-8deg));
+}
+@keyframes loadStreak{0%{transform:translateX(0) rotate(var(--ang,-8deg));opacity:0;}8%{opacity:.7;}85%{opacity:.5;}100%{transform:translateX(240vw) rotate(var(--ang,-8deg));opacity:0;}}
+.load-streak:nth-child(1){top:18%;--ang:-6deg;height:2px;animation-duration:2.6s;animation-delay:0s;opacity:.4;}
+.load-streak:nth-child(2){top:32%;--ang:-10deg;height:1.5px;animation-duration:1.9s;animation-delay:.35s;opacity:.6;}
+.load-streak:nth-child(3){top:47%;--ang:-4deg;height:3px;animation-duration:2.2s;animation-delay:.15s;opacity:.7;}
+.load-streak:nth-child(4){top:58%;--ang:-9deg;height:1.5px;animation-duration:1.6s;animation-delay:.6s;opacity:.5;}
+.load-streak:nth-child(5){top:69%;--ang:-5deg;height:2px;animation-duration:2.4s;animation-delay:.2s;opacity:.45;}
+.load-streak:nth-child(6){top:80%;--ang:-11deg;height:1.5px;animation-duration:2s;animation-delay:.8s;opacity:.55;}
+.load-streak:nth-child(7){top:24%;--ang:-7deg;height:1px;animation-duration:1.7s;animation-delay:1.05s;opacity:.35;}
+.load-core{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:20px;}
+.load-bolt-wrap{position:relative;width:84px;height:132px;display:flex;align-items:center;justify-content:center;}
+.load-bolt-wrap::after{
+  content:'';position:absolute;inset:-30%;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,194,51,.35) 0%,rgba(232,38,47,.16) 45%,rgba(0,0,0,0) 72%);
+  filter:blur(10px);animation:boltAuraPulse 1.7s ease-in-out .9s infinite;
+}
+.load-bolt{position:relative;z-index:1;width:100%;height:100%;overflow:visible;}
+.load-bolt .bolt-path{stroke-dasharray:1;stroke-dashoffset:1;animation:boltDraw .85s cubic-bezier(.3,.7,.2,1) .1s forwards;}
+.load-bolt .bolt-fill{opacity:0;animation:boltFillIn .5s ease-out .85s forwards;}
+@keyframes boltDraw{to{stroke-dashoffset:0;}}
+@keyframes boltFillIn{to{opacity:.96;}}
+@keyframes boltAuraPulse{0%,100%{opacity:.6;transform:scale(1);}50%{opacity:1;transform:scale(1.14);}}
+.load-name{
+  font-family:var(--font-head);font-weight:800;font-size:clamp(15px,3.4vw,20px);letter-spacing:.14em;text-transform:uppercase;
+  background:var(--grad-2);background-size:200% auto;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  opacity:0;transform:translateY(10px);animation:loadTextIn .6s ease-out 1.05s forwards, gradShift 6s ease-in-out infinite;
+  text-align:center;
+}
+.load-tag{
+  font-family:var(--font-head);font-weight:600;font-size:11.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--text-faint);
+  opacity:0;transform:translateY(8px);animation:loadTextIn .6s ease-out 1.2s forwards;text-align:center;
+}
+@keyframes loadTextIn{to{opacity:1;transform:translateY(0);}}
+.load-bar-track{width:200px;height:3px;border-radius:999px;background:rgba(255,240,194,.12);overflow:hidden;opacity:0;animation:loadTextIn .5s ease-out 1.3s forwards;}
+.load-bar-fill{display:block;height:100%;width:0%;border-radius:999px;background:var(--grad-1);box-shadow:0 0 10px rgba(255,170,60,.75);transition:width .2s linear;}
+.load-pct{
+  font-family:var(--font-head);font-weight:700;font-size:11px;letter-spacing:.08em;color:var(--text-faint);
+  font-variant-numeric:tabular-nums;opacity:0;animation:loadTextIn .5s ease-out 1.35s forwards;
+}
+@media (max-width:520px){
+  .load-bolt-wrap{width:64px;height:100px;}
+  .load-bar-track{width:160px;}
+}
+
+/* ============================================================
+   PAGE ARRIVAL — the hand-off from the load screen into the page
+   itself. #pageWrap and .arrive-scan carry no styling at rest;
+   the class below is added the instant the load screen clears and
+   removed the moment the animation finishes, so neither lingers or
+   affects layout or click targets afterward.
+
+   The read: the Flash is arriving faster than the frame can keep
+   up with — the page tears into view in slices, drops out to black
+   for a beat (twice), chromatic-splits red/cyan like a mistimed
+   scan, and a bright streak of "lightning" rips across — then it
+   all locks into sharp, clean focus.
+   ============================================================ */
+#pageWrap.arrive-glitch{animation:pageArrive .9s steps(1,end) 1 both;}
+#pageWrap.arrive-glitch::before,
+#pageWrap.arrive-glitch::after{
+  content:'';position:fixed;inset:0;z-index:9500;pointer-events:none;mix-blend-mode:screen;
+}
+#pageWrap.arrive-glitch::before{background:rgba(255,45,55,.45);animation:glitchSliceR .9s steps(1,end) 1 both;}
+#pageWrap.arrive-glitch::after{background:rgba(60,215,255,.4);animation:glitchSliceC .9s steps(1,end) 1 both;}
+.arrive-scan{
+  position:fixed;inset:0;z-index:9600;pointer-events:none;opacity:0;mix-blend-mode:screen;
+  background:
+    linear-gradient(100deg,rgba(255,255,255,0) 40%,rgba(255,241,204,.95) 49%,rgba(255,255,255,0) 58%),
+    repeating-linear-gradient(0deg,rgba(255,255,255,.06) 0px,rgba(255,255,255,.06) 1px,rgba(0,0,0,0) 2px,rgba(0,0,0,0) 4px);
+}
+#pageWrap.arrive-glitch .arrive-scan{animation:glitchScan .9s steps(1,end) 1 both;}
+@keyframes pageArrive{
+  0%{opacity:0;clip-path:inset(0 0 100% 0);transform:translate3d(0,0,0);filter:brightness(1) saturate(1);}
+  5%{opacity:1;clip-path:inset(0 0 50% 0);transform:translate3d(-24px,0,0) skewX(-3deg);filter:brightness(2.8) saturate(0) contrast(1.6);}
+  10%{opacity:0;clip-path:inset(0);transform:none;filter:none;}
+  14%{opacity:1;clip-path:inset(32% 0 42% 0);transform:translate3d(19px,0,0) skewX(2deg);filter:brightness(1.9) hue-rotate(-20deg) saturate(2.1);}
+  18%{clip-path:inset(0 0 71% 0);transform:translate3d(-14px,0,0);}
+  23%{clip-path:inset(0 0 6% 0);transform:translate3d(11px,0,0);filter:brightness(1.5) hue-rotate(12deg);}
+  28%{opacity:0;clip-path:inset(0);transform:none;filter:none;}
+  33%{opacity:1;clip-path:inset(0);transform:translate3d(-7px,0,0);filter:brightness(2) contrast(1.35);}
+  39%{transform:translate3d(6px,0,0);filter:brightness(1.25);}
+  45%{transform:translate3d(-2px,0,0);filter:none;}
+  53%{transform:none;}
+  62%{filter:brightness(1.3);}
+  68%{filter:none;}
+  100%{opacity:1;clip-path:inset(0);transform:none;filter:none;}
+}
+@keyframes glitchSliceR{
+  0%{opacity:0;clip-path:inset(50% 0 50% 0);transform:translate3d(0,0,0);}
+  5%{opacity:1;transform:translate3d(22px,0,0);clip-path:inset(16% 0 60% 0);}
+  10%{opacity:0;}
+  14%{opacity:.9;transform:translate3d(-18px,0,0);clip-path:inset(58% 0 14% 0);}
+  18%{transform:translate3d(14px,0,0);clip-path:inset(4% 0 78% 0);}
+  23%{opacity:.65;transform:translate3d(-10px,0,0);clip-path:inset(34% 0 36% 0);}
+  28%{opacity:0;}
+  33%{opacity:.55;transform:translate3d(8px,0,0);}
+  40%{opacity:0;}
+  100%{opacity:0;}
+}
+@keyframes glitchSliceC{
+  0%{opacity:0;clip-path:inset(50% 0 50% 0);transform:translate3d(0,0,0);}
+  6%{opacity:.95;transform:translate3d(-20px,0,0);clip-path:inset(62% 0 10% 0);}
+  10%{opacity:0;}
+  15%{opacity:.85;transform:translate3d(16px,0,0);clip-path:inset(8% 0 68% 0);}
+  20%{transform:translate3d(-12px,0,0);clip-path:inset(46% 0 28% 0);}
+  25%{opacity:.6;transform:translate3d(9px,0,0);clip-path:inset(18% 0 52% 0);}
+  28%{opacity:0;}
+  34%{opacity:.5;transform:translate3d(-6px,0,0);}
+  40%{opacity:0;}
+  100%{opacity:0;}
+}
+@keyframes glitchScan{
+  0%{opacity:0;transform:translateX(0);}
+  5%{opacity:1;transform:translateX(-6%);}
+  10%{opacity:0;}
+  14%{opacity:.85;transform:translateX(5%);}
+  23%{opacity:.5;}
+  28%{opacity:0;}
+  33%{opacity:.65;}
+  40%{opacity:0;}
+  100%{opacity:0;}
+}
+
+@media (prefers-reduced-motion: reduce){
+  .load-screen{animation:loaderSafetyHide .01s linear 1.2s forwards;transition:opacity .4s ease;}
+  .load-streak{display:none;}
+  .load-bolt-wrap::after{animation:none;opacity:.8;}
+  .load-bolt .bolt-path{animation:none;stroke-dashoffset:0;}
+  .load-bolt .bolt-fill{animation:none;opacity:.96;}
+  .load-name,.load-tag,.load-bar-track,.load-pct{animation:none;opacity:1;transform:none;}
+  .load-screen.is-gone{transition:opacity .4s ease;filter:none;transform:none;}
+  .load-screen.is-flash::before{display:none;}
+  #pageWrap.arrive-glitch,
+  #pageWrap.arrive-glitch::before,
+  #pageWrap.arrive-glitch::after,
+  #pageWrap.arrive-glitch .arrive-scan{animation:none !important;opacity:1;filter:none;transform:none;clip-path:none;}
+  .arrive-scan{display:none;}
+}
+
 </style>
+<noscript><style>#loadScreen{display:none!important;}html.is-loading,html.is-loading body{overflow:visible!important;height:auto!important;}</style></noscript>
 </head>
 <body>
+
+<!-- ============================================================
+     LOAD SCREEN — Speed Force entrance. Purely a choreographed
+     reveal: the real page underneath is already fully in the
+     markup, this overlay just controls the first impression.
+     Hidden instantly for no-JS visitors (see the <noscript> rule
+     in <head>) and force-hidden by a CSS timer even if a script
+     elsewhere on the page throws, so it can never trap anyone.
+     ============================================================ -->
+<div id="loadScreen" class="load-screen" role="status" aria-label="Loading Marcelo Danzel Cagas's GoHighLevel automation portfolio">
+  <span class="load-sr">Loading…</span>
+  <div class="load-field" aria-hidden="true">
+    <span class="load-streak"></span><span class="load-streak"></span><span class="load-streak"></span>
+    <span class="load-streak"></span><span class="load-streak"></span><span class="load-streak"></span>
+    <span class="load-streak"></span>
+  </div>
+  <div class="load-core" aria-hidden="true">
+    <div class="load-bolt-wrap">
+      <svg class="load-bolt" viewBox="0 0 100 160">
+        <defs>
+          <linearGradient id="loadBoltGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#fff0c2"/>
+            <stop offset="45%" stop-color="#ffc233"/>
+            <stop offset="100%" stop-color="#e8262f"/>
+          </linearGradient>
+        </defs>
+        <path class="bolt-fill" d="M62 4 L20 84 L46 84 L34 156 L84 66 L54 66 Z" fill="url(#loadBoltGrad)"/>
+        <path class="bolt-path" pathLength="1" d="M62 4 L20 84 L46 84 L34 156 L84 66 L54 66 Z" fill="none" stroke="url(#loadBoltGrad)" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="load-name">Marcelo Danzel Cagas</div>
+    <div class="load-tag">GoHighLevel Systems &amp; Automation</div>
+    <div class="load-bar-track"><span class="load-bar-fill" id="loadBarFill"></span></div>
+    <div class="load-pct" id="loadPct">0%</div>
+  </div>
+</div>
+<script>
+(function(){
+  var loader = document.getElementById('loadScreen');
+  if(!loader) return;
+  // #pageWrap is the loader's next sibling in the markup, so it does not
+  // exist yet at this point (this script runs synchronously while the
+  // parser is still on the loader itself) — look it up lazily in finish().
+  var fill = document.getElementById('loadBarFill');
+  var pctEl = document.getElementById('loadPct');
+  var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var minShow = reduced ? 250 : 1300;
+  var maxWait = 4000;
+  var t0 = Date.now();
+  var domReady = false, fontsReady = false, hidden = false, pct = 0;
+  function paint(){
+    if(fill) fill.style.width = pct.toFixed(0) + '%';
+    if(pctEl) pctEl.textContent = Math.round(pct) + '%';
+  }
+  function bump(target, dur){
+    var from = pct, delta = target - from, start = null;
+    function step(ts){
+      if(hidden) return;
+      if(!start) start = ts;
+      var p = Math.min(1, (ts - start) / dur);
+      pct = from + delta * (1 - Math.pow(1 - p, 3));
+      paint();
+      if(p < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+  bump(72, 900);
+  function cleanup(){
+    document.documentElement.classList.remove('is-loading');
+    loader.remove();
+    // The load screen is fully gone — this is the hand-off moment. The
+    // page itself now snaps into view through a quick "arriving at
+    // speed" glitch rather than just sitting there already-visible.
+    var pageWrap = document.getElementById('pageWrap');
+    if(pageWrap && !reduced){
+      pageWrap.classList.add('arrive-glitch');
+      var clearGlitch = function(e){
+        if(e && e.target !== pageWrap) return;
+        pageWrap.classList.remove('arrive-glitch');
+        pageWrap.removeEventListener('animationend', clearGlitch);
+      };
+      pageWrap.addEventListener('animationend', clearGlitch);
+      setTimeout(clearGlitch, 1050); // safety net if animationend never fires
+    }
+  }
+  function finish(){
+    if(hidden) return;
+    hidden = true;
+    bump(100, 240);
+    setTimeout(function(){
+      loader.classList.add('is-flash');
+      setTimeout(function(){
+        loader.classList.add('is-gone');
+        document.documentElement.classList.remove('is-loading');
+        setTimeout(cleanup, reduced ? 320 : 720);
+      }, reduced ? 60 : 190);
+    }, 260);
+  }
+  function maybeHide(){
+    if(hidden || !domReady || !fontsReady) return;
+    var wait = Math.max(0, minShow - (Date.now() - t0));
+    setTimeout(finish, wait);
+  }
+  if(document.readyState === 'interactive' || document.readyState === 'complete'){
+    domReady = true;
+  } else {
+    document.addEventListener('DOMContentLoaded', function(){ domReady = true; maybeHide(); });
+  }
+  if(document.fonts && document.fonts.ready){
+    document.fonts.ready.then(function(){ fontsReady = true; maybeHide(); }).catch(function(){ fontsReady = true; maybeHide(); });
+  } else {
+    fontsReady = true;
+  }
+  if(domReady) maybeHide();
+  setTimeout(function(){ if(!hidden){ domReady = true; fontsReady = true; finish(); } }, maxWait);
+})();
+</script>
+
+<!-- pageWrap: everything the visitor actually sees. Wrapping it lets the
+     load-screen hand off into a single, unified "arriving at speed" glitch
+     (a brief clip-path tear + chromatic flicker + jolt) rather than a plain
+     cut. The wrapper carries no styling at rest — the glitch class is added
+     and removed by JS around the reveal only. -->
+<div id="pageWrap">
+<span class="arrive-scan" aria-hidden="true"></span>
 
 <!-- Ambient animated background — fixed behind all content, purely decorative.
      Each orb sits in its own parallax layer so it drifts slightly as the
@@ -3559,7 +3859,7 @@ armReveals();
 })();
 </script>
 
-
+</div><!-- /#pageWrap -->
 
 </body>
 </html>
