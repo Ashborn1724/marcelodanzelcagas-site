@@ -130,6 +130,16 @@ p.sec-sub{color:var(--text-dim);font-size:18px;max-width:640px;line-height:1.65;
 .btn-ghost:hover{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.25);transform:translateY(-2px);}
 .btn-sm{padding:10px 18px;font-size:13.5px;border-radius:10px;}
 .btn-block{width:100%;}
+.btn-label-short{display:none;}
+@media (max-width:480px){
+  /* Safety net for any block button whose label is too long for a phone-
+     width modal: .btn's own overflow:hidden (needed elsewhere for the
+     click-ripple effect) will silently clip nowrap text instead of
+     visibly breaking it, so wrap rather than clip once space is tight. */
+  .btn-block{white-space:normal;line-height:1.3;text-align:center;}
+  .btn-label-full{display:none;}
+  .btn-label-short{display:inline;}
+}
 .btn svg{width:16px;height:16px;flex-shrink:0;}
 /* Focus visibility for accessibility */
 a:focus-visible,button:focus-visible,[tabindex]:focus-visible{
@@ -182,8 +192,15 @@ a:focus-visible,button:focus-visible,[tabindex]:focus-visible{
   -webkit-backdrop-filter:blur(16px) saturate(160%);
   border-bottom:1px solid var(--border-soft);
 }
-#nav .container{display:flex;align-items:center;justify-content:space-between;gap:24px;}
-.brand{display:flex;align-items:center;gap:10px;font-family:var(--font-head);font-weight:800;font-size:17px;}
+/* The nav row (logo + 8 links + CTA button) needs more breathing room than
+   the site's normal 1240px content width, so it gets its own wider cap —
+   and flex-shrink:0 on each of its three direct children so they can never
+   be silently squeezed smaller than their content (which is what caused
+   the brand tagline to visually overlap the nav links before). Paired with
+   the matching 1320px breakpoint below that swaps in the hamburger menu,
+   the full-width nav is only ever shown when it actually fits. */
+#nav .container{display:flex;align-items:center;justify-content:space-between;gap:24px;max-width:1320px;}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--font-head);font-weight:800;font-size:17px;flex-shrink:0;}
 .brand .mark{
   height:38px;display:flex;align-items:center;justify-content:center;flex-shrink:0;
 }
@@ -192,9 +209,9 @@ a:focus-visible,button:focus-visible,[tabindex]:focus-visible{
 /* With the name gone from the header, the tagline carries the mark alone. */
 .brand-tag{font-family:var(--font-head);font-weight:700;font-size:13.5px;letter-spacing:.02em;color:var(--text-dim);white-space:nowrap;}
 @media (max-width:420px){.brand-tag{font-size:12px;white-space:normal;line-height:1.25;}}
-.nav-links{display:flex;align-items:center;gap:30px;position:relative;}
+.nav-links{display:flex;align-items:center;gap:26px;position:relative;flex-wrap:nowrap;flex-shrink:0;}
 .nav-links a{
-  font-size:14.5px;font-weight:600;color:var(--text-dim);
+  font-size:14px;font-weight:600;color:var(--text-dim);white-space:nowrap;
   position:relative;padding:4px 0;transition:color .2s;
   z-index:1;
 }
@@ -212,7 +229,7 @@ a:focus-visible,button:focus-visible,[tabindex]:focus-visible{
   transition:left .3s cubic-bezier(.2,.8,.2,1), width .3s cubic-bezier(.2,.8,.2,1), opacity .2s ease;
 }
 .nav-links:hover .nav-pill{opacity:1;}
-.nav-cta{display:flex;align-items:center;gap:12px;}
+.nav-cta{display:flex;align-items:center;gap:12px;flex-shrink:0;}
 .nav-burger{
   display:none;width:42px;height:42px;border-radius:10px;border:1px solid var(--border);
   align-items:center;justify-content:center;background:rgba(255,255,255,.03);
@@ -236,7 +253,13 @@ a:focus-visible,button:focus-visible,[tabindex]:focus-visible{
 #mobile-menu.open{transform:translateY(0);opacity:1;pointer-events:auto;}
 #mobile-menu a{padding:14px 6px;font-size:16px;font-weight:600;border-bottom:1px solid var(--border-soft);}
 #mobile-menu .btn{margin-top:16px;}
-@media (max-width:880px){
+/* This breakpoint is wider than the usual "tablet" cutoff on purpose: with
+   8 nav links plus the brand mark/tagline plus the CTA button, the row's
+   natural (unshrunk) width is about 1224px, so it needs the nav's own
+   1320px container (see "#nav .container" above) to sit comfortably.
+   Below that width the row switches to the hamburger menu instead of
+   letting links wrap or overlap the brand text. */
+@media (max-width:1320px){
   .nav-links,.nav-cta .btn-ghost{display:none;}
   .nav-burger{display:flex;}
 }
@@ -1368,80 +1391,146 @@ html.is-loading,html.is-loading body{overflow:hidden;height:100%;}
 
 /* ============================================================
    PAGE ARRIVAL — the hand-off from the load screen into the page
-   itself. #pageWrap and .arrive-scan carry no styling at rest;
-   the class below is added the instant the load screen clears and
-   removed the moment the animation finishes, so neither lingers or
-   affects layout or click targets afterward.
+   itself. #pageWrap and the .arrive-fx overlays carry no styling at
+   rest; the class below is added to all of them the instant the load
+   screen clears and removed the moment the animation finishes, so
+   nothing lingers or affects layout or click targets afterward.
 
-   The read: the Flash is arriving faster than the frame can keep
-   up with — the page tears into view in slices, drops out to black
-   for a beat (twice), chromatic-splits red/cyan like a mistimed
-   scan, and a bright streak of "lightning" rips across — then it
-   all locks into sharp, clean focus.
+   The read: the page rushes in from a distance and the signal hasn't
+   quite locked on yet — a burst of overexposed light, then a beat of
+   violent glitching (quick colour-split flickers, a couple of
+   scanline tears, brief total dropouts), easing off wave by wave,
+   then one last crack of lightning-white light and it snaps into
+   sharp, completely normal, clean focus.
+
+   The overlays are real elements kept as SIBLINGS of #pageWrap (see
+   the HTML above), never children of it or pseudo-elements on it:
+   #pageWrap carries a transform+filter while it glitches, and in CSS
+   a transformed (or filtered) element becomes the containing block
+   for any position:fixed descendant — that descendant would then be
+   sized against #pageWrap's full page-height box and dragged around
+   by the jitter, instead of sitting still on top of it as a clean,
+   viewport-sized effect. An earlier version of this exact animation
+   nested the overlays inside #pageWrap and hit exactly that bug (the
+   "flashes" were barely visible and positioned against the wrong
+   point on the page) — so this is deliberate: every overlay stays a
+   sibling, never a descendant.
+
+   steps(1,end) (rather than the usual smooth easing) is what actually
+   sells the "glitch": each keyframe segment snaps instantly to its
+   next value and holds, instead of tweening smoothly into it.
    ============================================================ */
-#pageWrap.arrive-glitch{animation:pageArrive .9s steps(1,end) 1 both;}
-#pageWrap.arrive-glitch::before,
-#pageWrap.arrive-glitch::after{
-  content:'';position:fixed;inset:0;z-index:9500;pointer-events:none;mix-blend-mode:screen;
+#pageWrap.arrive-glitch{
+  animation:pageGlitch 1.1s steps(1,end) 1 both;
 }
-#pageWrap.arrive-glitch::before{background:rgba(255,45,55,.45);animation:glitchSliceR .9s steps(1,end) 1 both;}
-#pageWrap.arrive-glitch::after{background:rgba(60,215,255,.4);animation:glitchSliceC .9s steps(1,end) 1 both;}
-.arrive-scan{
-  position:fixed;inset:0;z-index:9600;pointer-events:none;opacity:0;mix-blend-mode:screen;
-  background:
-    linear-gradient(100deg,rgba(255,255,255,0) 40%,rgba(255,241,204,.95) 49%,rgba(255,255,255,0) 58%),
-    repeating-linear-gradient(0deg,rgba(255,255,255,.06) 0px,rgba(255,255,255,.06) 1px,rgba(0,0,0,0) 2px,rgba(0,0,0,0) 4px);
+.arrive-fx{position:fixed;z-index:9500;pointer-events:none;opacity:0;}
+.arrive-tint{inset:0;mix-blend-mode:screen;}
+.arrive-tint-r{background:rgba(232,38,47,.55);}
+.arrive-tint-g{background:rgba(255,194,51,.5);}
+.arrive-tint-r.arrive-glitch{animation:glitchTintR 1.1s steps(1,end) 1 both;}
+.arrive-tint-g.arrive-glitch{animation:glitchTintG 1.1s steps(1,end) 1 both;}
+/* Thin, full-width scanline tears. Each stays at a fixed height and
+   vertical position and only ever shifts horizontally or flickers its
+   opacity — never resized — so it reads as a slice of the screen
+   briefly losing sync rather than a stretching bar. */
+.arrive-tear{left:0;width:100%;height:5px;mix-blend-mode:screen;
+  background:linear-gradient(90deg,transparent,rgba(255,235,190,.9) 20%,rgba(232,38,47,.9) 55%,transparent 85%);
+  box-shadow:0 0 14px rgba(255,194,51,.6);
 }
-#pageWrap.arrive-glitch .arrive-scan{animation:glitchScan .9s steps(1,end) 1 both;}
-@keyframes pageArrive{
-  0%{opacity:0;clip-path:inset(0 0 100% 0);transform:translate3d(0,0,0);filter:brightness(1) saturate(1);}
-  5%{opacity:1;clip-path:inset(0 0 50% 0);transform:translate3d(-24px,0,0) skewX(-3deg);filter:brightness(2.8) saturate(0) contrast(1.6);}
-  10%{opacity:0;clip-path:inset(0);transform:none;filter:none;}
-  14%{opacity:1;clip-path:inset(32% 0 42% 0);transform:translate3d(19px,0,0) skewX(2deg);filter:brightness(1.9) hue-rotate(-20deg) saturate(2.1);}
-  18%{clip-path:inset(0 0 71% 0);transform:translate3d(-14px,0,0);}
-  23%{clip-path:inset(0 0 6% 0);transform:translate3d(11px,0,0);filter:brightness(1.5) hue-rotate(12deg);}
-  28%{opacity:0;clip-path:inset(0);transform:none;filter:none;}
-  33%{opacity:1;clip-path:inset(0);transform:translate3d(-7px,0,0);filter:brightness(2) contrast(1.35);}
-  39%{transform:translate3d(6px,0,0);filter:brightness(1.25);}
-  45%{transform:translate3d(-2px,0,0);filter:none;}
-  53%{transform:none;}
-  62%{filter:brightness(1.3);}
-  68%{filter:none;}
-  100%{opacity:1;clip-path:inset(0);transform:none;filter:none;}
+.arrive-tear-1{top:23%;}
+.arrive-tear-2{top:64%;}
+.arrive-tear-1.arrive-glitch{animation:glitchTear1 1.1s steps(1,end) 1 both;}
+.arrive-tear-2.arrive-glitch{animation:glitchTear2 1.1s steps(1,end) 1 both;}
+/* The landing beat: one bright crack of lightning-white light as the
+   glitch resolves, echoing the load screen's bolt right before the
+   page locks into place. This one eases smoothly, on purpose — it's
+   the "arrival", not part of the glitch itself. */
+.arrive-bolt-flash{inset:0;mix-blend-mode:screen;
+  background:radial-gradient(circle at 50% 40%,rgba(255,255,255,.95) 0%,rgba(255,225,170,.55) 22%,rgba(255,130,60,0) 50%);
 }
-@keyframes glitchSliceR{
-  0%{opacity:0;clip-path:inset(50% 0 50% 0);transform:translate3d(0,0,0);}
-  5%{opacity:1;transform:translate3d(22px,0,0);clip-path:inset(16% 0 60% 0);}
-  10%{opacity:0;}
-  14%{opacity:.9;transform:translate3d(-18px,0,0);clip-path:inset(58% 0 14% 0);}
-  18%{transform:translate3d(14px,0,0);clip-path:inset(4% 0 78% 0);}
-  23%{opacity:.65;transform:translate3d(-10px,0,0);clip-path:inset(34% 0 36% 0);}
-  28%{opacity:0;}
-  33%{opacity:.55;transform:translate3d(8px,0,0);}
-  40%{opacity:0;}
+.arrive-bolt-flash.arrive-glitch{animation:glitchFlash 1.1s ease-out 1 both;}
+
+@keyframes pageGlitch{
+  0%   {opacity:0;    transform:scale(.82) translate3d(0,0,0);      filter:brightness(2.4) saturate(0) contrast(1.5);}
+  3%   {opacity:1;    transform:scale(.94) translate3d(-18px,0,0);  filter:brightness(1.7) hue-rotate(-10deg) contrast(1.4) saturate(1.3);}
+  6%   {              transform:scale(1.02) translate3d(14px,-2px,0); filter:brightness(.35) hue-rotate(8deg);}
+  9%   {              transform:scale(1) translate3d(-4px,0,0);     filter:brightness(2) contrast(1.6);}
+  12%  {opacity:.1;   transform:scale(1) translate3d(0,0,0);        filter:brightness(.05);}
+  15%  {opacity:1;    transform:scale(1) translate3d(11px,1px,0);   filter:brightness(1.4) hue-rotate(-6deg);}
+  19%  {              transform:scale(1) translate3d(-9px,0,0);     filter:brightness(.5) contrast(1.3);}
+  23%  {              transform:scale(1) translate3d(4px,0,0);      filter:brightness(1.6);}
+  27%  {opacity:.14;  transform:scale(1) translate3d(0,0,0);        filter:brightness(.06);}
+  31%  {opacity:1;    transform:scale(1) translate3d(-7px,0,0);     filter:brightness(1.25) hue-rotate(4deg);}
+  35%  {              transform:scale(1) translate3d(6px,0,0);      filter:brightness(.6);}
+  40%  {              transform:scale(1) translate3d(-2px,0,0);     filter:brightness(1.15);}
+  46%  {opacity:.1;   transform:scale(1) translate3d(0,0,0);        filter:brightness(.04);}
+  52%  {opacity:1;    transform:scale(1) translate3d(3px,0,0);      filter:brightness(1.3) contrast(1.1);}
+  58%  {              transform:scale(1) translate3d(-2px,0,0);     filter:brightness(.85);}
+  66%  {              transform:scale(1) translate3d(0,0,0);        filter:brightness(1) contrast(1);}
+  76%  {              transform:scale(1) translate3d(1px,0,0);      filter:brightness(1.05);}
+  84%  {              transform:scale(1) translate3d(0,0,0);        filter:brightness(1.35) contrast(1.05) saturate(1.05);}
+  92%  {              filter:brightness(1.08);}
+  100% {opacity:1;    transform:none;                               filter:none;}
+}
+@keyframes glitchTintR{
+  0%  {opacity:0;}
+  3%  {opacity:.5;  transform:translate3d(-24px,0,0);}
+  6%  {opacity:.3;  transform:translate3d(20px,0,0);}
+  9%  {opacity:.55; transform:translate3d(-6px,0,0);}
+  12% {opacity:0;}
+  15% {opacity:.4;  transform:translate3d(15px,0,0);}
+  19% {opacity:.22; transform:translate3d(-12px,0,0);}
+  23% {opacity:.38;}
+  27% {opacity:0;}
+  31% {opacity:.28; transform:translate3d(-9px,0,0);}
+  40% {opacity:.16;}
+  46% {opacity:0;}
+  52% {opacity:.14; transform:translate3d(4px,0,0);}
+  66% {opacity:0;}
   100%{opacity:0;}
 }
-@keyframes glitchSliceC{
-  0%{opacity:0;clip-path:inset(50% 0 50% 0);transform:translate3d(0,0,0);}
-  6%{opacity:.95;transform:translate3d(-20px,0,0);clip-path:inset(62% 0 10% 0);}
-  10%{opacity:0;}
-  15%{opacity:.85;transform:translate3d(16px,0,0);clip-path:inset(8% 0 68% 0);}
-  20%{transform:translate3d(-12px,0,0);clip-path:inset(46% 0 28% 0);}
-  25%{opacity:.6;transform:translate3d(9px,0,0);clip-path:inset(18% 0 52% 0);}
-  28%{opacity:0;}
-  34%{opacity:.5;transform:translate3d(-6px,0,0);}
-  40%{opacity:0;}
+@keyframes glitchTintG{
+  0%  {opacity:0;}
+  4%  {opacity:.4;  transform:translate3d(20px,0,0);}
+  7%  {opacity:.5;  transform:translate3d(-16px,0,0);}
+  10% {opacity:.25; transform:translate3d(5px,0,0);}
+  13% {opacity:0;}
+  16% {opacity:.35; transform:translate3d(-13px,0,0);}
+  20% {opacity:.2;  transform:translate3d(9px,0,0);}
+  24% {opacity:.3;}
+  28% {opacity:0;}
+  33% {opacity:.22; transform:translate3d(7px,0,0);}
+  41% {opacity:.12;}
+  47% {opacity:0;}
+  53% {opacity:.1;  transform:translate3d(-3px,0,0);}
+  66% {opacity:0;}
   100%{opacity:0;}
 }
-@keyframes glitchScan{
-  0%{opacity:0;transform:translateX(0);}
-  5%{opacity:1;transform:translateX(-6%);}
-  10%{opacity:0;}
-  14%{opacity:.85;transform:translateX(5%);}
-  23%{opacity:.5;}
-  28%{opacity:0;}
-  33%{opacity:.65;}
-  40%{opacity:0;}
+@keyframes glitchTear1{
+  0%  {opacity:0;}
+  4%  {opacity:.85; transform:translate3d(-40px,0,0) scaleX(1.04);}
+  8%  {opacity:0;}
+  17% {opacity:.7;  transform:translate3d(30px,0,0) scaleX(.96);}
+  21% {opacity:0;}
+  32% {opacity:.55; transform:translate3d(-18px,0,0) scaleX(1);}
+  36% {opacity:0;}
+  100%{opacity:0;}
+}
+@keyframes glitchTear2{
+  0%  {opacity:0;}
+  6%  {opacity:.75; transform:translate3d(34px,0,0) scaleX(1.05);}
+  10% {opacity:0;}
+  22% {opacity:.65; transform:translate3d(-26px,0,0) scaleX(.97);}
+  26% {opacity:0;}
+  38% {opacity:.5;  transform:translate3d(14px,0,0) scaleX(1);}
+  43% {opacity:0;}
+  100%{opacity:0;}
+}
+@keyframes glitchFlash{
+  0%  {opacity:0;}
+  76% {opacity:0;}
+  85% {opacity:.9;}
+  93% {opacity:.35;}
   100%{opacity:0;}
 }
 
@@ -1454,11 +1543,8 @@ html.is-loading,html.is-loading body{overflow:hidden;height:100%;}
   .load-name,.load-tag,.load-bar-track,.load-pct{animation:none;opacity:1;transform:none;}
   .load-screen.is-gone{transition:opacity .4s ease;filter:none;transform:none;}
   .load-screen.is-flash::before{display:none;}
-  #pageWrap.arrive-glitch,
-  #pageWrap.arrive-glitch::before,
-  #pageWrap.arrive-glitch::after,
-  #pageWrap.arrive-glitch .arrive-scan{animation:none !important;opacity:1;filter:none;transform:none;clip-path:none;}
-  .arrive-scan{display:none;}
+  #pageWrap.arrive-glitch{animation:none !important;opacity:1;filter:none;transform:none;}
+  .arrive-fx{display:none;}
 }
 
 </style>
@@ -1536,18 +1622,24 @@ html.is-loading,html.is-loading body{overflow:hidden;height:100%;}
     document.documentElement.classList.remove('is-loading');
     loader.remove();
     // The load screen is fully gone — this is the hand-off moment. The
-    // page itself now snaps into view through a quick "arriving at
-    // speed" glitch rather than just sitting there already-visible.
+    // page itself now rushes into view and glitches for a beat (colour
+    // flickers, scanline tears, brief dropouts) before a last crack of
+    // light settles it into place. #pageWrap drives the jitter; the
+    // five .arrive-fx overlays are separate elements (see the HTML
+    // comment above them) that all get the same class at the same
+    // time so they play in lockstep.
     var pageWrap = document.getElementById('pageWrap');
+    var fx = document.querySelectorAll('.arrive-fx');
     if(pageWrap && !reduced){
-      pageWrap.classList.add('arrive-glitch');
+      var players = [pageWrap].concat(Array.prototype.slice.call(fx));
+      players.forEach(function(el){ el.classList.add('arrive-glitch'); });
       var clearGlitch = function(e){
         if(e && e.target !== pageWrap) return;
-        pageWrap.classList.remove('arrive-glitch');
+        players.forEach(function(el){ el.classList.remove('arrive-glitch'); });
         pageWrap.removeEventListener('animationend', clearGlitch);
       };
       pageWrap.addEventListener('animationend', clearGlitch);
-      setTimeout(clearGlitch, 1050); // safety net if animationend never fires
+      setTimeout(clearGlitch, 1300); // safety net if animationend never fires
     }
   }
   function finish(){
@@ -1583,13 +1675,27 @@ html.is-loading,html.is-loading body{overflow:hidden;height:100%;}
 })();
 </script>
 
+<!-- Arrival-glitch overlays for the load-screen hand-off. These must be
+     SIBLINGS of #pageWrap, not children of it: #pageWrap carries a
+     transform+filter while it glitches, which makes it the containing
+     block for any position:fixed descendant — a fixed child would be
+     sized against pageWrap's full (page-height) box and dragged around
+     by the jitter, instead of staying a stable, viewport-sized effect on
+     top of it. Kept outside, they're always positioned against the real
+     viewport no matter what #pageWrap is doing. -->
+<div class="arrive-fx arrive-tint arrive-tint-r" aria-hidden="true"></div>
+<div class="arrive-fx arrive-tint arrive-tint-g" aria-hidden="true"></div>
+<div class="arrive-fx arrive-tear arrive-tear-1" aria-hidden="true"></div>
+<div class="arrive-fx arrive-tear arrive-tear-2" aria-hidden="true"></div>
+<div class="arrive-fx arrive-bolt-flash" aria-hidden="true"></div>
+
 <!-- pageWrap: everything the visitor actually sees. Wrapping it lets the
      load-screen hand off into a single, unified "arriving at speed" glitch
-     (a brief clip-path tear + chromatic flicker + jolt) rather than a plain
-     cut. The wrapper carries no styling at rest — the glitch class is added
-     and removed by JS around the reveal only. -->
+     effect (a burst of light, violent colour-split jitter and scanline
+     tears, easing off in waves, then a final crack of light) rather than
+     a plain cut. The wrapper carries no styling at rest — the glitch
+     class is added and removed by JS around the reveal only. -->
 <div id="pageWrap">
-<span class="arrive-scan" aria-hidden="true"></span>
 
 <!-- Ambient animated background — fixed behind all content, purely decorative.
      Each orb sits in its own parallax layer so it drifts slightly as the
@@ -1630,6 +1736,7 @@ html.is-loading,html.is-loading body{overflow:hidden;height:100%;}
       <a href="#sites">Sites</a>
       <a href="#videos">Watch</a>
       <a href="#process">Process</a>
+      <a href="#" id="resumeNavLink">My Resume</a>
     </div>
     <div class="nav-cta">
       <a href="#final-cta" class="btn btn-ghost btn-sm">Book a Strategy Call</a>
@@ -1646,6 +1753,7 @@ html.is-loading,html.is-loading body{overflow:hidden;height:100%;}
   <a href="#videos">Watch</a>
   <a href="#process">Process</a>
   <a href="#why">Why Me</a>
+  <a href="#" id="resumeMobileLink">My Resume</a>
   <a href="#final-cta" class="btn btn-primary btn-block">Book a Strategy Call</a>
 </div>
 
@@ -2139,6 +2247,22 @@ $$('#bookCallBtn, .nav-cta a[href="#final-cta"]').forEach(()=>{});
 document.addEventListener('DOMContentLoaded', ()=>{
   const bookBtn = $('#bookCallBtn');
   if (bookBtn) bookBtn.setAttribute('href', CONFIG.bookingUrl);
+});
+
+/* "My Resume" nav link (desktop + mobile) -> the embedded PDF, opened
+   as a same-tab navigation to a data: URI. This looks like it should be
+   able to open in a new tab (target="_blank"), but Chrome silently
+   blocks top-level navigation to a data: URL when it's opened as a new
+   tab/window (a restriction added to stop data: URLs being used for
+   phishing) -- the click would just do nothing, with no visible error.
+   That restriction doesn't apply to a plain same-tab navigation from a
+   direct link click, which is why this is built that way: it's the
+   version that's actually confirmed to work. The data URI is defined
+   once here and applied to both nav copies of the link. */
+const RESUME_PDF_BASE64 = "JVBERi0xLjQKJZOMi54gUmVwb3J0TGFiIEdlbmVyYXRlZCBQREYgZG9jdW1lbnQgKG9wZW5zb3VyY2UpCjEgMCBvYmoKPDwKL0YxIDIgMCBSIC9GMiAzIDAgUgo+PgplbmRvYmoKMiAwIG9iago8PAovQmFzZUZvbnQgL0hlbHZldGljYSAvRW5jb2RpbmcgL1dpbkFuc2lFbmNvZGluZyAvTmFtZSAvRjEgL1N1YnR5cGUgL1R5cGUxIC9UeXBlIC9Gb250Cj4+CmVuZG9iagozIDAgb2JqCjw8Ci9CYXNlRm9udCAvSGVsdmV0aWNhLUJvbGQgL0VuY29kaW5nIC9XaW5BbnNpRW5jb2RpbmcgL05hbWUgL0YyIC9TdWJ0eXBlIC9UeXBlMSAvVHlwZSAvRm9udAo+PgplbmRvYmoKNCAwIG9iago8PAovQ29udGVudHMgOCAwIFIgL01lZGlhQm94IFsgMCAwIDYxMiA3OTIgXSAvUGFyZW50IDcgMCBSIC9SZXNvdXJjZXMgPDwKL0ZvbnQgMSAwIFIgL1Byb2NTZXQgWyAvUERGIC9UZXh0IC9JbWFnZUIgL0ltYWdlQyAvSW1hZ2VJIF0KPj4gL1JvdGF0ZSAwIC9UcmFucyA8PAoKPj4gCiAgL1R5cGUgL1BhZ2UKPj4KZW5kb2JqCjUgMCBvYmoKPDwKL1BhZ2VNb2RlIC9Vc2VOb25lIC9QYWdlcyA3IDAgUiAvVHlwZSAvQ2F0YWxvZwo+PgplbmRvYmoKNiAwIG9iago8PAovQXV0aG9yIChcKGFub255bW91c1wpKSAvQ3JlYXRpb25EYXRlIChEOjIwMjYwODI3MTQwNzU4KzAwJzAwJykgL0NyZWF0b3IgKFwodW5zcGVjaWZpZWRcKSkgL0tleXdvcmRzICgpIC9Nb2REYXRlIChEOjIwMjYwODI3MTQwNzU4KzAwJzAwJykgL1Byb2R1Y2VyIChSZXBvcnRMYWIgUERGIExpYnJhcnkgLSBcKG9wZW5zb3VyY2VcKSkgCiAgL1N1YmplY3QgKFwodW5zcGVjaWZpZWRcKSkgL1RpdGxlIChcKGFub255bW91c1wpKSAvVHJhcHBlZCAvRmFsc2UKPj4KZW5kb2JqCjcgMCBvYmoKPDwKL0NvdW50IDEgL0tpZHMgWyA0IDAgUiBdIC9UeXBlIC9QYWdlcwo+PgplbmRvYmoKOCAwIG9iago8PAovRmlsdGVyIFsgL0FTQ0lJODVEZWNvZGUgL0ZsYXRlRGVjb2RlIF0gL0xlbmd0aCAyMzgxCj4+CnN0cmVhbQpHYXRtPD8kImMzJlVpIS9mVmFcXzsmR0ckXj9WJy1NT15XMUNnVSZNQmtJMy5QN1dHOixUKSc9WTs+cG5HOEsySC44PzdRNEwtNDxeYjBmVlNpcl9VNmk9OmBJbTQuSWhTXTQwKWYsY1EjSSNrYDlBIi9qWz1AZjhORXNjQFNBQj0uaSsqZkhsN2owal8uQGV0JzxbPTcoQzA7YGhJVDAnZltHcz9HJVVPQDUoSlFuLVtjYTpwdSFJVT1UaEFOb1tJNVVydV1ubigjSD9xVUAkay1ZQUpia2ZQZDgwRyY/IT1rL0NNTjg9JkwmMU5LO2AoK3RvYGIhYUghXDlYTU1SPVVoX1Q2aC9PKT5qZSZRRV9ecSwmJVFARz9dOyJNXT5mRVNSOGVqYHFOLEE0RWxaXXFLKzk4NHMwZWZOJy80Yl41LWQkQ0RqaWdFOiQqTk1oZz5MR1Q+WCM/UjRTMS00XCZeUUEmM2JcPEBvZ249ZnM9KyprZlJQVUIuKVE+Q25XYnQiVixIVF01NDZzVFghQE1ASjJbaFIuaidpYDNwPk5QTGtRcWxlMSdbdUw2RkFjYCkpR2MrOmZkMGJHSG87dGhjWF9JJlpnTFpWMENGJS4yXzNLY2hxXW5DaS1zTyMoVj9sSTpWQ1kpMCEzNVVFL2ZUUUAwczhUQnBkMWMia2hUYVB0LjZnKEorUEQnKTlEX2orXV0/XVkkOjxXbTlmYWNdNWc/OC9dRCJCQ00jUy4sW1txJzxQUz9gYVVmVUItQT8tT2EoYltKdHBKSFIiQ1IjLz5CM1NAJ1AwSU1KIjg9Om5JKzcrXW48KkprVXVWRyUodUgmYz9hbFBEJT5GUU5SalMwPk9BMD9IP1UiR0E1YF4wQkFgMSYiYGZXR2ZYa1M6VlxXR1dzaiNBPS9ySTJWKDtYMEoySjxMUGVRXHA8c1RbaSQzLztYIjY+QSMqczlGblQoY05eaVpPOlwuQHNYWTxcZnFMIjtrWjNBcVJzPSopNiVLMURcKWAvPS1bXSo6M2tPWnQiQnUxUUdMXVApN20zK1diV1hMR05uPjo5VWJqaSMhQU9GTjpaS0loQVUlXUEzaExKJCheTHBTOCZTJCZuOE5lXGNnKDEpbnVVI11nJ0IqayVOXyUjdF9iMlcuaWhlQShEOFppVDRdbjU3XW1DKktaO18oNmAoXGgpJCdBPzBSJFgzUkxvLSowbVtqKF9pVChEKUB1QTo6ZW0tSFNuNk1JPWQwYUdAcVpfKTModGJbJTw0PigpXmIySDU0XGFmYjUqMDcrOGBCdCY3I2U0cSonSz1iVjpYNnRxXFVjT21uKUV0ODs5a0tXWislWGU6ZkgkYVNESSYyaFM5ZDprXHFnO3BXWlBtMGtqIXJoSm84MDYnLTJJMiQnUmZBa21xPzIxMnI0UTcncShUJi5wYzRcNFtsci1UL2c3RHUtSWFeO1hiVUxAVT9lNFdTR0NRJFNdWl9icWFVOVdCLlg4aShVXkk+YEB1YjFOc0FwVCJyYWUrTUkyMlJvOidsV1gzTkZKbVsobVQ3JG5sPzleIWEkSEpXRDlbQ0JAUVRjSzVzKTl0bmdfTTRBbjRrVW8sNzZRWFJMQl0+UF9oND9eVzhWWEslU19yRzk5VDszajdDNi1cLkhxM0gobiUlSj9DUj1uKCRPITZqb0I3c1IuZy00KC80SlVKOGFRblg3SGtCSVstM18pVk1zQjZib041QlkuWVUmRWxyISdTLihLU0NVQnRHW0A+WitbIi9dXz0zZU1GR1pxSFg4MWFcVkRBPiFbWW9QLWVmaWUxOy4/VUNTRGYqbXFKVGlkIj8kOUJzaVZlV0otR3JiT1stKS8nP0d1YD1pSjcwTi9uUEolJElEVWdRZzEmNSFNU2RlV01gMD0vK3FjUDhQZUdSYT9xYSJAa1BKJDUuaCYkVjlPRkUqYTY1dUovOGMoYW1rRyRPNV02RTNiSlhPRFMvVDpHLGhfXy5VLkIqZCdlKHVkJFtCYGldc2JqXGtyNFw0MGdfcWo9J0B0VjtRODRcWzFLQ0dQNCw2RzAzQk5iXShBPUtNSCEkPEI3YT02UFk1c2BRRW1EYi5AOlZ0YTtSc3BSJmdcOXBsJDIiJ2IsJUpUJkVrPSJKLi9GUGNDc04zTFNyOk0jJEBfQzE5WHVXLlpFIzVSVEpgI1c1IWBbVClXSCokZWk2JVU8SEluXFVBMjEyMDFOVUZQYWkrT3E2RD5uPk0rKUpNT1llVnVnWjdcLScmVmJXK2MyIW9qKyQxLSJia2FzaF1gal1rSDtqRE1QVD84XzhuTjIhalVIQydyN2NVSGtmQyZFSWhGa0hCYG9pUzZDVWgnXSkvLSZNYShpLy9XRC5rYnBGQygxZjpVWmFyRTQ+QG1AQ3FMZl8xMCYjVU5LJ1tFQGk5SXQvTCJFUmclaz5vUWwkNVc7YiUwV1U+LzNTUGg9V2tyLmBxOVk0Pz89ZzhKUT89clNePTswQldhMEpcU2BRazwtOkM9N0pLYnRVPFQ6bDsnJT9gY00mJDhiY2I7Ui1RMXJST3IyXUM7SUpgITBdPnNALUsiS2I4XkE7Zm8lcWRyLy9xNUE8VDcxLHVPaEhFLUU0WDtsOyclc2M6SS91YTpLW21IUjFsaEhOPEZoNmohVUovXjQyRnBPJSJkdGtAZCc/JnJZP2g7QTZ1JkxRXSsxYjdocXE4SElFQGY7aEc4YDxgZCQoSydebTwmQV5ebSQjITFwRTc2aGdMWCctW0s/MklHOGkkSHFvclQiRjE5bnFeMWBXbEJBUmpbcU4yY2loajRPYVUyPTAlb3Q9XmZlISxHay5lblJ0TGAzb1hWRCNHZGptbjhBMiIxKGUyOD4jNVE/PyVFUFZQUDhtVlIocThxTE8sTyRcTEpfbGgyLGgrTkUjYDdpZ2o/KFlQUjxSPGghY2BUJl47PTBBU1ZuWGRaPSQnTCxrai4nYXAmaGklImBpdHBwKzN1NFpnZ2hmR1xxSSpNR3NQbFdoTGpvTFYwYEhiI1VwKVtiRlxTO1tlUEwxYWxIOjphJXMqOVRRaTQzXlRuYCNxWCV0YUxcZGcrKV1GPS0nO2hCbTQjbypcLktgSTRbXlNnRSEkNjtJIkIoWzNMXz1BQXQnZFZTLFdPSTVcblV+PmVuZHN0cmVhbQplbmRvYmoKeHJlZgowIDkKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDYxIDAwMDAwIG4gCjAwMDAwMDAxMDIgMDAwMDAgbiAKMDAwMDAwMDIwOSAwMDAwMCBuIAowMDAwMDAwMzIxIDAwMDAwIG4gCjAwMDAwMDA1MTQgMDAwMDAgbiAKMDAwMDAwMDU4MiAwMDAwMCBuIAowMDAwMDAwODYyIDAwMDAwIG4gCjAwMDAwMDA5MjEgMDAwMDAgbiAKdHJhaWxlcgo8PAovSUQgCls8NDgxZGM4NjJmMTRkMDNmYmJkZTRjYjdlNGU2NTVlM2E+PDQ4MWRjODYyZjE0ZDAzZmJiZGU0Y2I3ZTRlNjU1ZTNhPl0KJSBSZXBvcnRMYWIgZ2VuZXJhdGVkIFBERiBkb2N1bWVudCAtLSBkaWdlc3QgKG9wZW5zb3VyY2UpCgovSW5mbyA2IDAgUgovUm9vdCA1IDAgUgovU2l6ZSA5Cj4+CnN0YXJ0eHJlZgozMzkzCiUlRU9GCjUgMSBvYmoKPDwKL1BhZ2VNb2RlIC9Vc2VOb25lIC9QYWdlcyA3IDAgUiAvVHlwZSAvQ2F0YWxvZwogL0FGIFsxMCAwIFJdIC9OYW1lcyA8PCAvRW1iZWRkZWRGaWxlcyA8PCAvTmFtZXMgWyhDb250ZW50IENyZWRlbnRpYWxzKSAxMCAwIFJdID4+ID4+ID4+CmVuZG9iago5IDAgb2JqCjw8IC9MZW5ndGggMjAxNzAgL0YgPDwgL1N1YnR5cGUgKGFwcGxpY2F0aW9uL2MycGEpIC9MZW5ndGggMjAxNzAgPj4gPj4Kc3RyZWFtCgAATspqdW1iAAAAHmp1bWRjMnBhABEAEIAAAKoAOJtxA2MycGEAAABOpGp1bWIAAABHanVtZGMybWEAEQAQgAAAqgA4m3EDdXJuOmMycGE6MTYyM2RhNjQtZTZiOS00ZmUyLWI3OGItMmM1MzVlNDEyZjFkAAAAC5RqdW1iAAAAKWp1bWRjMmFzABEAEIAAAKoAOJtxA2MycGEuYXNzZXJ0aW9ucwAAAAm5anVtYgAAACNqdW1kQMsMMruKSJ2nCyrW9H9DaQNjMnBhLmljb24AAAAAF2JmZGIAaW1hZ2Uvc3ZnK3htbAAAAAl3YmlkYjxzdmcgd2lkdGg9IjcxNiIgaGVpZ2h0PSI3MTYiIHZpZXdCb3g9IjAgMCA3MTYgNzE2IiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cGF0aCBkPSJNNTA4Ljc0OSAzMTcuMzk5QzUxNi43NzcgMjg3LjMxNCA1MDguOTkxIDI1My44ODQgNDg1LjM4OSAyMzAuMjgyQzQ2MS43ODggMjA2LjY4MSA0MjguMzYgMTk4Ljg5NSAzOTguMjczIDIwNi45MjNDMzc2LjIzMSAxODQuOTI4IDM0My4zOSAxNzQuOTU2IDMxMS4xNDggMTgzLjU5NkMyNzguOTA2IDE5Mi4yMzQgMjU1LjQ1IDIxNy4yOTIgMjQ3LjM2IDI0Ny4zNjFDMjE3LjI5MSAyNTUuNDUxIDE5Mi4yMzMgMjc4LjkxIDE4My41OTUgMzExLjE0OUMxNzQuOTU3IDM0My4zOTEgMTg0LjkyNyAzNzYuMjMyIDIwNi45MjQgMzk4LjI3NEMxOTguODk2IDQyOC4zNTkgMjA2LjY4MyA0NjEuNzg5IDIzMC4yODQgNDg1LjM5MUMyNTMuODg1IDUwOC45OTIgMjg3LjMxMyA1MTYuNzc5IDMxNy40MDEgNTA4Ljc1QzMzOS40NDIgNTMwLjc0NSAzNzIuMjg2IDU0MC43MTcgNDA0LjUyNSA1MzIuMDc5QzQzNi43NjcgNTIzLjQ0MSA0NjAuMjIzIDQ5OC4zODQgNDY4LjMxMyA0NjguMzE1QzQ5OC4zODMgNDYwLjIyNCA1MjMuNDQgNDM2Ljc2NiA1MzIuMDc4IDQwNC41MjZDNTQwLjcxNiAzNzIuMjg1IDUzMC43NDcgMzM5LjQ0MyA1MDguNzQ5IDMxNy40MDJWMzE3LjM5OVpNNDcwLjg5OSAyNDQuNzc2QzQ4Ni44OTIgMjYwLjc3IDQ5My40ODggMjgyLjYwMSA0OTAuNjg3IDMwMy40MTJMNDE1LjU3NyAyNjAuMDQ2QzQxMi40MTEgMjU4LjIxOCA0MDguNTA5IDI1OC4yMTggNDA1LjM0NSAyNjAuMDQ2TDMxNy40MDEgMzEwLjgyVjI3Ny41MjZDMzE3LjQwMSAyNzUuMTkxIDMxOC42NTIgMjczLjAwNSAzMjAuNjc2IDI3MS44MzdMMzg3LjY0NCAyMzMuMTc0QzQxNC4xNzggMjE4LjM1MyA0NDguMzQ2IDIyMi4yMjMgNDcwLjkwMSAyNDQuNzc2SDQ3MC44OTlaTTM1Ny44MzcgMzExLjE0NEwzOTguMjc1IDMzNC40OTFWMzgxLjE4NUwzNTcuODM3IDQwNC41MzJMMzE3LjM5OCAzODEuMTg1VjMzNC40OTFMMzU3LjgzNyAzMTEuMTQ0Wk0yNjQuNzc2IDI2OS42OTNDMjY1LjIwNyAyMzkuMzA1IDI4NS42NDQgMjExLjY0OSAzMTYuNDUzIDIwMy4zOTNDMzM4LjMgMTk3LjU0IDM2MC41MDUgMjAyLjc0NCAzNzcuMTI3IDIxNS41NzNMMzAyLjAxNCAyNTguOTM3QzI5OC44NDggMjYwLjc2NCAyOTYuODk4IDI2NC4xNDQgMjk2Ljg5OCAyNjcuNzk4VjM2OS4zNDZMMjY4LjA2NSAzNTIuNjk5QzI2Ni4wNDMgMzUxLjUzMSAyNjQuNzc2IDM0OS4zNTMgMjY0Ljc3NiAzNDcuMDE3VjI2OS42OTFWMjY5LjY5M1pNMjAzLjM5MSAzMTYuNDU0QzIwOS4yNDQgMjk0LjYwOCAyMjQuODU0IDI3Ny45NzggMjQ0LjI3NiAyNjkuOTk5VjM1Ni43M0MyNDQuMjc2IDM2MC4zODQgMjQ2LjIyNiAzNjMuNzYzIDI0OS4zOTIgMzY1LjU5MUwzMzcuMzM3IDQxNi4zNjVMMzA4LjUwMyA0MzMuMDEzQzMwNi40ODEgNDM0LjE4MSAzMDMuOTYxIDQzNC4xODggMzAxLjkzOSA0MzMuMDJMMjM0Ljk3MSAzOTQuMzU3QzIwOC44NjggMzc4Ljc4OSAxOTUuMTM4IDM0Ny4yNjEgMjAzLjM5MSAzMTYuNDU0Wk0yNDQuNzc1IDQ3MC45QzIyOC43ODEgNDU0LjkwNiAyMjIuMTg2IDQzMy4wNzUgMjI0Ljk4NiA0MTIuMjY0TDMwMC4wOTYgNDU1LjYzQzMwMy4yNjMgNDU3LjQ1NyAzMDcuMTY0IDQ1Ny40NTcgMzEwLjMyOCA0NTUuNjNMMzk4LjI3MyA0MDQuODU2VjQzOC4xNDlDMzk4LjI3MyA0NDAuNDg1IDM5Ny4wMjIgNDQyLjY3MSAzOTQuOTk3IDQ0My44MzlMMzI4LjAyOSA0ODIuNTAyQzMwMS40OTUgNDk3LjMyMiAyNjcuMzI3IDQ5My40NTIgMjQ0Ljc3MiA0NzAuOUgyNDQuNzc1Wk00NTAuODk3IDQ0NS45ODJDNDUwLjQ2NiA0NzYuMzcxIDQzMC4wMjkgNTA0LjAyNyAzOTkuMjIgNTEyLjI4M0MzNzcuMzczIDUxOC4xMzYgMzU1LjE2OCA1MTIuOTMyIDMzOC41NDcgNTAwLjEwMkw0MTMuNjU5IDQ1Ni43MzhDNDE2LjgyNiA0NTQuOTExIDQxOC43NzUgNDUxLjUzMiA0MTguNzc1IDQ0Ny44NzdWMzQ2LjMyOUw0NDcuNjA5IDM2Mi45NzdDNDQ5LjYzMSAzNjQuMTQ1IDQ1MC44OTcgMzY2LjMyMyA0NTAuODk3IDM2OC42NTlWNDQ1Ljk4NVY0NDUuOTgyWk01MTIuMjgyIDM5OS4yMjFDNTA2LjQyOSA0MjEuMDY4IDQ5MC44MTkgNDM3LjY5NyA0NzEuMzk3IDQ0NS42NzZWMzU4Ljk0NkM0NzEuMzk3IDM1NS4yOTIgNDY5LjQ0OCAzNTEuOTEyIDQ2Ni4yODEgMzUwLjA4NUwzNzguMzM2IDI5OS4zMTFMNDA3LjE3IDI4Mi42NjNDNDA5LjE5MiAyODEuNDk1IDQxMS43MTIgMjgxLjQ4NyA0MTMuNzM0IDI4Mi42NTVMNDgwLjcwMiAzMjEuMzE4QzUwNi44MDUgMzM2Ljg4NyA1MjAuNTM2IDM2OC40MTUgNTEyLjI4MiAzOTkuMjIxWiIgZmlsbD0iYmxhY2siLz4KPC9zdmc+CgAAAQZqdW1iAAAAKWp1bWRjYm9yABEAEIAAAKoAOJtxA2MycGEuYWN0aW9ucy52MgAAAADVY2JvcqFnYWN0aW9uc4GkZmFjdGlvbmxjMnBhLmNyZWF0ZWRxZGlnaXRhbFNvdXJjZVR5cGV4Rmh0dHA6Ly9jdi5pcHRjLm9yZy9uZXdzY29kZXMvZGlnaXRhbHNvdXJjZXR5cGUvdHJhaW5lZEFsZ29yaXRobWljTWVkaWFtc29mdHdhcmVBZ2VudKJkbmFtZWpncHQtNS1taW5pZ3ZlcnNpb25qZ3B0LTUtbWluaWR3aGVueBsyMDI2LTA4LTI3VDE0OjA3OjU4LjEyMTI3M1oAAACkanVtYgAAAChqdW1kY2JvcgARABCAAACqADibcQNjMnBhLmhhc2guZGF0YQAAAAB0Y2JvcqVqZXhjbHVzaW9uc4GiZXN0YXJ0GQ+4Zmxlbmd0aBlOymRuYW1lbmp1bWJmIG1hbmlmZXN0Y2FsZ2ZzaGEyNTZkaGFzaFggqVsfGMwrv88+OMFNbhrHcvCTHvF1hecHKcK2X9b5yQ9jcGFkQAAAAolqdW1iAAAAJ2p1bWRjMmNsABEAEIAAAKoAOJtxA2MycGEuY2xhaW0udjIAAAACWmNib3Kmamluc3RhbmNlSUR4LHhtcDppaWQ6MmVkOTEwM2MtNDk0YS00MDdhLTg0MzEtN2I1ODM4NjBmNzYwdGNsYWltX2dlbmVyYXRvcl9pbmZvo2RuYW1lZ0NoYXRHUFRkaWNvbqJjdXJseCRzZWxmI2p1bWJmPWMycGEuYXNzZXJ0aW9ucy9jMnBhLmljb25kaGFzaFggdT7wPVcFMZKzqE7rTB77wYwYdLcnd9bQNgLHZTYR4/Frc3BlY1ZlcnNpb25lMi4yLjBpc2lnbmF0dXJleE1zZWxmI2p1bWJmPS9jMnBhL3VybjpjMnBhOjE2MjNkYTY0LWU2YjktNGZlMi1iNzhiLTJjNTM1ZTQxMmYxZC9jMnBhLnNpZ25hdHVyZXJjcmVhdGVkX2Fzc2VydGlvbnODomN1cmx4JHNlbGYjanVtYmY9YzJwYS5hc3NlcnRpb25zL2MycGEuaWNvbmRoYXNoWCB1PvA9VwUxkrOoTutMHvvBjBh0tyd31tA2AsdlNhHj8aJjdXJseCpzZWxmI2p1bWJmPWMycGEuYXNzZXJ0aW9ucy9jMnBhLmFjdGlvbnMudjJkaGFzaFggd940J9N7QhaoYDaOSLBrLL7Fj6qH3jtHas7avzB8bEuiY3VybHgpc2VsZiNqdW1iZj1jMnBhLmFzc2VydGlvbnMvYzJwYS5oYXNoLmRhdGFkaGFzaFggJu2JxhRmHNzGkPpa7IHEz4DX2rBwugJKyDXGI0S9obxoZGM6dGl0bGVpaW1hZ2UucGRmY2FsZ2ZzaGEyNTYAAEA4anVtYgAAAChqdW1kYzJjcwARABCAAACqADibcQNjMnBhLnNpZ25hdHVyZQAAAEAIY2JvctKEWQvoogE4JBghglkFiDCCBYQwggNsoAMCAQICEAul/OkOcIzyBYAx7kQcZHMwDQYJKoZIhvcNAQELBQAwSjEhMB8GA1UEAwwYU1NMLmNvbSBDMlBBIElDQSBSMSAyMDI1MRgwFgYDVQQKDA9TU0wgQ29ycG9yYXRpb24xCzAJBgNVBAYTAlVTMB4XDTI2MDQyMjE1NTEwNVoXDTI3MDQyMzE1NTEwNFowRzELMAkGA1UEBhMCVVMxGTAXBgNVBAoMEE9wZW5BSSBPcENvLCBMTEMxHTAbBgNVBAMMFE9wZW5BSSBNZWRpYSBTZXJ2aWNlMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnbpqFExNApfqgYm2FtG+XlhOEwNyoZnfaRRxfOUhI9OBH6I1nEyjEko8724rv+ZkrteES2kkWmPP6nYKkLJl23wBPI3h/sEFM3evJ947IDq0D2OHmBvNTZwav7R/MxFEqlQwN0a4B/2aeUQLc1dVowNjEXwdEt2sWC/meq7epZjDE5NOSPBa+OB8pJJL1Wy6ysIFKsiSvnXUlGe1Vw2qapptMDAs11VhjGrSU7YAeB1eRUOeTpKjA4Dxr1vRsuv+ixnvFrrXNwmVq2QtmcmHmvgcvy7Q52OAlhqaeaA3kzajNclIySyYYwXpRJs1Hqy5CKdTbB2caHPICh45zAZJ8wIDAQABo4IBZzCCAWMwDAYDVR0TAQH/BAIwADAfBgNVHSMEGDAWgBQ5PRBH3JePr4h7TXMYHc3l7qSlKjBvBggrBgEFBQcBAQRjMGEwOQYIKwYBBQUHMAKGLWh0dHA6Ly9jcnQtYzJwYS5zc2wuY29tL1NTTC5jb20tQzJQQS1JLVIxLmNlcjAkBggrBgEFBQcwAYYYaHR0cDovL29jc3AtYzJwYS5zc2wuY29tMBcGA1UdIAQQMA4wDAYKKwYBBAGD6F4BATApBgNVHSUEIjAgBggrBgEFBQcDBAYIKwYBBQUHAyQGCisGAQQBg+heAgEwHQYDVR0OBBYEFPOdEE3UDcudcvhGCnYYR6UbaE90MA4GA1UdDwEB/wQEAwIGwDAZBgkrBgEEAYPoXgMEDAYKKwYBBAGD6F4DCjAzBgkrBgEEAYPoXgQEJgwkMDE5YmM0MDMtNWNkNy03NjY5LWFmZTYtZmRiMTcxNzdkNDI4MA0GCSqGSIb3DQEBCwUAA4ICAQCCOJdsZR+hNwAb8fntGnS61aZbHjX1Z2wazytmaUDN9fzSclbfypUo6vhmGN5CQz34BXigaB4oGYmtte5//PUy0oy4X+dsgG7rW3yXWzDnEw8uQrgDxnCa/v4gCaw1RtWgCIxJRYDDupIfVccEWhWdb9Lr2Hmbljq8RBKQNAUVNH30QaUzly8ubFFSCm09SbAVy8eGWBEHzNzuni7pxgc5uDNcINoS7gBXM1QucChKJSlPknwu0voc3WcueuhQeDlRuoM62oh+kCOQkvViWJrlwqhzhp7F2HHp7xhcZHuR7g83L3aYeFZk529C0RB9kgG8hRZqb20ZZIXY/yKW7bnvstBcGgWEfWhdNVtLscVpSBZ5BuZojqDEYZg6TPjAJHnlpmjg7xn91pDWLi1BDGR1EFZfk5S2oZyKAho8tsDobfPFQ+d2LGgXpPLmy4uIlRboEXsVKnIkgRA9IcZjbS8lgKOZW6oppf1H6uH3a+UE+1tQJm0roYJdMfXdYqh8MgPcTMelLHIwUIBXkwaC4uius6cIf69ZNK4Qcu8qna54rOIz7FO1yZnSKKgqN6FOq/zMflibJ21F4bQqB5wEvQUwV6ExLiAuyeLIEFTboZIWT74kNZj+LwVp3Bu4TePeBy8a6Gz1wYri0/5yd9MTqCvUV5euDAsGh9gABAG+k7YSiVkGUzCCBk8wggQ3oAMCAQICFCcrY8jMHU0tm4RRcmz0nF4yUa7eMA0GCSqGSIb3DQEBCwUAME8xJjAkBgNVBAMMHVNTTC5jb20gQzJQQSBSU0EgUm9vdCBDQSAyMDI1MRgwFgYDVQQKDA9TU0wgQ29ycG9yYXRpb24xCzAJBgNVBAYTAlVTMB4XDTI1MTIyMjE4MTczMFoXDTMwMTIyMTE4MTczMFowSjEhMB8GA1UEAwwYU1NMLmNvbSBDMlBBIElDQSBSMSAyMDI1MRgwFgYDVQQKDA9TU0wgQ29ycG9yYXRpb24xCzAJBgNVBAYTAlVTMIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAyzq0zbicyxYpVrh5px74a/b52I9yw6aYExqtAypB2mEeLkcIUr0edFG+XQTseoK2wPv6D+gnpYvo/mLzDGDxA19IGspzAX9zleQZTm7MTno13lgR4deCF9zSFkdDd5vfSBmIeZ+jOaRZTl7gTgtHl/J1Qtd2PbZ/pCLc7QfGbx/UckaM1lHHtbd68pP5IyfVgAISUHWKcKBo6ee8hCh8nCrqKanAL/7JdhEZRlWwL2PqfZ70FbBEpEDeQDZcRIpUa1dI/7sRb6TV6o7CHtd82LzOab+gHwBNk0U7mS550s8Bnp8pu0bZFHhjMJYzUZxek2365TRKWHizKWxdfLh1G5U8mXche9i0SuvazccICtYEyaLerpeztlGW2pKbw7K7UMT+tqRMA5VdLZJqT2Ll4Cr3aaAbnATVuZMA2tG7Xg4IDk8Ixguv+SlM0MkE7OvzsnFQe3YnaJH5UIi4dzXYzaHh19Mp50rGh1RZJMJnsm0HCTXbus4YuEal4AuL2uGnn2rOYBbSEBLE98HeGXN5VeBwtO/qzMf+dhyJTmYKaYgtEO3DRqIq5H+M1BKcV0YtWBhi1cqo+n74wtlhahbLNV2gk6OyZagv7e+Y5/x+ukj0qqFx/JOvf+qnThhziGnVQsD5hJKFTxDLVLM9OvjdKWURecpDnpa4h1iWIe/RkXsCAwEAAaOCASYwggEiMBIGA1UdEwEB/wQIMAYBAf8CAQAwDgYDVR0PAQH/BAQDAgEGMCkGA1UdJQQiMCAGCCsGAQUFBwMEBggrBgEFBQcDJAYKKwYBBAGD6F4CATAdBgNVHQ4EFgQUOT0QR9yXj6+Ie01zGB3N5e6kpSowFwYDVR0gBBAwDjAMBgorBgEEAYPoXgEBMB8GA1UdIwQYMBaAFPwqSnU6gPqZY5Pwc1fsvpOwfcN7MHgGCCsGAQUFBwEBBGwwajAkBggrBgEFBQcwAYYYaHR0cDovL29jc3AtYzJwYS5zc2wuY29tMEIGCCsGAQUFBzAChjZodHRwOi8vY3J0LWMycGEuc3NsLmNvbS9TU0wuY29tLUMyUEEtUm9vdC0yMDI1LVJTQS5jZXIwDQYJKoZIhvcNAQELBQADggIBAM42+j7vD5Y2LY6vEVVm/3t/AysNAGtW9cutHr0qga2lptBNoz4Uk+STEQxp1eSMqG7mN1QIFuIlnOxlZig8Mz2iGpqiu81nZErnvnQhBKFuw6smxDss2lW5/UdOBOCNeJs3g8R0O8VHYe9tQXKk211DU8mWTuUd4AQ636jdLtGvWJfW5/RfBHIjPGvPC705AasGjJOoj6cPdlk+4QSS9ffZ+0ZiBatubtSIRqCzLypqX6VO2vjU/MzZozypd0UbCsH5mLk5y8yhccAqghJx0+T2JeJRIW3WFd/kU41vSn0Xjl7AugzVDnd5IYF6zu33HB2bjrayikJWnY9rQSoO/muci+4aoyjPX/Pp0GQe1u7CiUsY65LP9a/CJwVNuJGhNyWZ5v2A3PS8xzd7vrQBLWdY8C/nw7OLceVEA3owtqWydT5bI34701SmOrnHzA4cMxXVajV6gXZ/L/5X2mn4DD4/71SPAYt7RsNjnvof7cR/L3CEK/ZWgvSnyyTXbF4kezq9qVg7GBFps5yP0nB0/4tuJrvDq0XHUwWWnEe1xkarXvX8iIsZaKM1D+V8apVltavruf+6uOCbSkeyzuwVL4kCfRXur5wMTcTJzgH1Mj2P9yY0C/4ii3rt+V5eZ19RFFvbJFb70Vmht94WmmYJttGGLvoHfX6VeZtEZnw2hfb1oWNwYWRZMwcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA9lkBAJzmCEPDwdYXFx26ew2qUoim4deuXXSB5GQbT8PW5Um+eBeck9WlZTwvUuuYMKKPd+KWpfLdqd1nI1DEa4p0b6dGK9zEWJQMO2JoE0kOiGXYc7WL/NSncN6G4UCffIrpVGvh2ANQFq+FhxyJA01R4FWqATsvLekPblTwie1Yt/T+PAdBB9lnjEn4xCYcQsZKKIx0SkbweiP7HHoAAdz7SJEbHlyDz/Q9dsq82YXQawBROTNORSCMqUZE6eGHWqTmG+H8SLbqJEUXwfYv1N83hWG+UbzPawqA9ItxvbyKoB8zWtWhniAgExI1txfg8ZbEoOMuYYQ3xSmYhMgk+NzwD1AKZW5kc3RyZWFtCmVuZG9iagoxMCAwIG9iago8PCAvQUZSZWxhdGlvbnNoaXAgL0MyUEFfTWFuaWZlc3QgL0Rlc2MgKENvbnRlbnQgQ3JlZGVudGlhbHMpIC9GIChDb250ZW50IENyZWRlbnRpYWxzKSAvRUYgPDwgL0YgOSAwIFIgPj4gL1N1YnR5cGUgKGFwcGxpY2F0aW9uL2MycGEpIC9UeXBlIC9GaWxlU3BlYyAvVUYgKENvbnRlbnQgQ3JlZGVudGlhbHMpID4+CmVuZG9iagp4cmVmCjUgMQowMDAwMDAzNzg0IDAwMDAxIG4gCjkgMgowMDAwMDAzOTM4IDAwMDAwIG4gCjAwMDAwMjQyMTIgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSAxMSAvUm9vdCA1IDEgUiAvUHJldiAzMzkzIC9JRCBbPDQ4MWRjODYyZjE0ZDAzZmJiZGU0Y2I3ZTRlNjU1ZTNhPjw0ODFkYzg2MmYxNGQwM2ZiYmRlNGNiN2U0ZTY1NWUzYT5dID4+CnN0YXJ0eHJlZgoyNDQwNwolJUVPRgo=";
+document.addEventListener('DOMContentLoaded', ()=>{
+  const href = 'data:application/pdf;base64,' + RESUME_PDF_BASE64;
+  $$('#resumeNavLink, #resumeMobileLink').forEach(a => a.setAttribute('href', href));
 });
 
 /* Final CTA — direct contact card. "Email Me" / "Call, Text Me" route
@@ -3040,7 +3164,7 @@ function openProjectModal(id){
         </div>
       </div>
       <div class="tab-panel" data-tab="automation"><p style="color:var(--text-dim);font-size:14.5px;">${p.automation}</p></div>
-      <a href="${mailtoLink(`I want something like "${p.title}" built for my business`, `Hi Marcelo,\n\nI just looked at the "${p.title}" example on your portfolio and I'd like something like this built for my business.\n\nA bit about my business:\n- \n\nLooking forward to hearing from you.`)}" class="btn btn-primary btn-block" style="margin-top:22px;">Build Something Like This For My Business</a>
+      <a href="${mailtoLink(`I want something like "${p.title}" built for my business`, `Hi Marcelo,\n\nI just looked at the "${p.title}" example on your portfolio and I'd like something like this built for my business.\n\nA bit about my business:\n- \n\nLooking forward to hearing from you.`)}" class="btn btn-primary btn-block" style="margin-top:22px;"><span class="btn-label-full">Build Something Like This For My Business</span><span class="btn-label-short">Build This For My Business</span></a>
     </div>
   `, 'wide');
 }
